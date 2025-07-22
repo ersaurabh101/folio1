@@ -20,6 +20,7 @@ class Galaxy {
     init() {
         // Scene setup
         this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x0a0a1a); // Dark blue instead of black
         
         // Camera setup
         this.camera = new THREE.PerspectiveCamera(
@@ -34,21 +35,41 @@ class Galaxy {
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById('galaxy-canvas'),
             antialias: true,
-            alpha: true
+            alpha: false
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         
-        // Enable fog for depth
-        this.scene.fog = new THREE.Fog(0x000000, 1, 100);
+        // Enable fog for depth with purple tint
+        this.scene.fog = new THREE.Fog(0x1a1a3a, 10, 80);
+        
+        // Add ambient light for better visibility
+        const ambientLight = new THREE.AmbientLight(0x404080, 0.3);
+        this.scene.add(ambientLight);
+        
+        // Add point lights for galaxy glow
+        const light1 = new THREE.PointLight(0x64ffda, 1, 50);
+        light1.position.set(0, 0, 0);
+        this.scene.add(light1);
+        
+        const light2 = new THREE.PointLight(0xff6b9d, 0.8, 40);
+        light2.position.set(15, 10, -10);
+        this.scene.add(light2);
+        
+        const light3 = new THREE.PointLight(0x9b59b6, 0.6, 35);
+        light3.position.set(-15, -10, 10);
+        this.scene.add(light3);
     }
 
     createStars() {
-        // Create multiple star systems
-        this.createStarField(5000, 50, 0xffffff); // Distant stars
-        this.createStarField(2000, 30, 0x64ffda); // Galaxy core stars
-        this.createStarField(1000, 20, 0x00bcd4); // Accent stars
-        this.createMovingStars(500, 15); // Animated stars
+        // Create multiple colorful star systems
+        this.createStarField(3000, 50, 0xffffff); // White distant stars
+        this.createStarField(2000, 40, 0x64ffda); // Cyan galaxy core stars
+        this.createStarField(1500, 35, 0xff6b9d); // Pink accent stars
+        this.createStarField(1200, 30, 0x9b59b6); // Purple stars
+        this.createStarField(1000, 25, 0xf39c12); // Orange stars
+        this.createStarField(800, 20, 0xe74c3c);  // Red stars
+        this.createMovingStars(600, 15); // Animated colorful stars
     }
 
     createStarField(count, range, color) {
@@ -147,10 +168,19 @@ class Galaxy {
             velocities[i3 + 1] = (Math.random() - 0.5) * 0.01;
             velocities[i3 + 2] = (Math.random() - 0.5) * 0.02;
 
-            // Bright colors for moving stars
-            colors[i3] = 0.8 + Math.random() * 0.2;     // R
-            colors[i3 + 1] = 0.9 + Math.random() * 0.1; // G
-            colors[i3 + 2] = 1.0;                       // B
+            // Bright rainbow colors for moving stars
+            const colorChoice = Math.random();
+            if (colorChoice < 0.2) {
+                colors[i3] = 1.0; colors[i3 + 1] = 0.4; colors[i3 + 2] = 0.7; // Pink
+            } else if (colorChoice < 0.4) {
+                colors[i3] = 0.4; colors[i3 + 1] = 1.0; colors[i3 + 2] = 0.8; // Cyan
+            } else if (colorChoice < 0.6) {
+                colors[i3] = 0.6; colors[i3 + 1] = 0.3; colors[i3 + 2] = 1.0; // Purple
+            } else if (colorChoice < 0.8) {
+                colors[i3] = 1.0; colors[i3 + 1] = 0.6; colors[i3 + 2] = 0.2; // Orange
+            } else {
+                colors[i3] = 1.0; colors[i3 + 1] = 0.2; colors[i3 + 2] = 0.3; // Red
+            }
 
             sizes[i] = Math.random() * 2 + 1;
         }
@@ -224,20 +254,20 @@ class Galaxy {
             positions[i3 + 1] = (Math.random() - 0.5) * 5;
             positions[i3 + 2] = Math.sin(angle) * radius + (Math.random() - 0.5) * 10;
 
-            // Nebula colors (purple/blue/cyan)
+            // Vibrant nebula colors (rainbow spectrum)
             const colorChoice = Math.random();
-            if (colorChoice < 0.33) {
-                colors[i3] = 0.4;     // Purple
-                colors[i3 + 1] = 0.0;
-                colors[i3 + 2] = 0.8;
-            } else if (colorChoice < 0.66) {
-                colors[i3] = 0.0;     // Blue
-                colors[i3 + 1] = 0.4;
-                colors[i3 + 2] = 1.0;
+            if (colorChoice < 0.16) {
+                colors[i3] = 1.0; colors[i3 + 1] = 0.2; colors[i3 + 2] = 0.8; // Hot Pink
+            } else if (colorChoice < 0.32) {
+                colors[i3] = 0.6; colors[i3 + 1] = 0.2; colors[i3 + 2] = 1.0; // Purple
+            } else if (colorChoice < 0.48) {
+                colors[i3] = 0.2; colors[i3 + 1] = 0.6; colors[i3 + 2] = 1.0; // Blue
+            } else if (colorChoice < 0.64) {
+                colors[i3] = 0.2; colors[i3 + 1] = 1.0; colors[i3 + 2] = 0.8; // Cyan
+            } else if (colorChoice < 0.80) {
+                colors[i3] = 1.0; colors[i3 + 1] = 0.8; colors[i3 + 2] = 0.2; // Gold
             } else {
-                colors[i3] = 0.0;     // Cyan
-                colors[i3 + 1] = 0.8;
-                colors[i3 + 2] = 1.0;
+                colors[i3] = 1.0; colors[i3 + 1] = 0.4; colors[i3 + 2] = 0.2; // Orange
             }
 
             sizes[i] = Math.random() * 5 + 2;
@@ -274,9 +304,9 @@ class Galaxy {
                 
                 void main() {
                     float distanceToCenter = distance(gl_PointCoord, vec2(0.5));
-                    float strength = 0.15 / distanceToCenter - 0.3;
+                    float strength = 0.2 / distanceToCenter - 0.2;
                     
-                    gl_FragColor = vec4(vColor, strength * 0.3);
+                    gl_FragColor = vec4(vColor, strength * 0.6);
                 }
             `,
             transparent: true,
@@ -389,11 +419,12 @@ class Galaxy {
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Scroll effect
+        // Gentle scroll effect for galaxy
         window.addEventListener('scroll', () => {
             const scrollPercent = window.pageYOffset / (document.documentElement.scrollHeight - window.innerHeight);
-            this.camera.position.z = 5 + scrollPercent * 10;
-            this.camera.rotation.x = scrollPercent * 0.5;
+            // Much more subtle camera movement
+            this.camera.position.z = 5 + scrollPercent * 2;
+            this.camera.rotation.x = scrollPercent * 0.1;
         });
     }
 

@@ -151,14 +151,17 @@ class Portfolio {
     }
 
     setupParallaxEffect() {
+        // Removed problematic parallax effect that caused text overlap
+        // Instead, we'll use a subtle background movement
         window.addEventListener('scroll', () => {
             const scrolled = window.pageYOffset;
-            const parallaxElements = document.querySelectorAll('.hero-content');
+            const scrollPercent = scrolled / (document.documentElement.scrollHeight - window.innerHeight);
             
-            parallaxElements.forEach(element => {
-                const speed = 0.5;
-                element.style.transform = `translateY(${scrolled * speed}px)`;
-            });
+            // Only apply subtle effects to avoid text overlap
+            const heroSection = document.querySelector('.hero-section');
+            if (heroSection && scrolled < window.innerHeight) {
+                heroSection.style.opacity = Math.max(0, 1 - scrolled / (window.innerHeight * 0.8));
+            }
         });
     }
 
