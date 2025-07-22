@@ -20,7 +20,25 @@ class Galaxy {
     init() {
         // Scene setup
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x0a0a1a); // Dark blue instead of black
+        
+        // Create gradient background
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const context = canvas.getContext('2d');
+        
+        // Create radial gradient
+        const gradient = context.createRadialGradient(256, 256, 0, 256, 256, 256);
+        gradient.addColorStop(0, '#2d1b69'); // Purple center
+        gradient.addColorStop(0.3, '#1a1a2e'); // Dark purple
+        gradient.addColorStop(0.7, '#16213e'); // Dark blue
+        gradient.addColorStop(1, '#0f0f23'); // Very dark blue
+        
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, 512, 512);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        this.scene.background = texture;
         
         // Camera setup
         this.camera = new THREE.PerspectiveCamera(
@@ -29,50 +47,62 @@ class Galaxy {
             0.1,
             1000
         );
-        this.camera.position.z = 5;
+        this.camera.position.set(0, 0, 8);
         
-        // Renderer setup
+        // Renderer setup with better settings for mobile
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById('galaxy-canvas'),
-            antialias: true,
-            alpha: false
+            antialias: window.innerWidth > 768, // Disable antialiasing on mobile for performance
+            alpha: false,
+            powerPreference: "high-performance"
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         
-        // Enable fog for depth with purple tint
-        this.scene.fog = new THREE.Fog(0x1a1a3a, 10, 80);
+        // Reduce fog distance for mobile visibility
+        this.scene.fog = new THREE.Fog(0x1a1a3a, 20, 100);
         
-        // Add ambient light for better visibility
-        const ambientLight = new THREE.AmbientLight(0x404080, 0.3);
+        // Brighter ambient light
+        const ambientLight = new THREE.AmbientLight(0x6a4c93, 0.6);
         this.scene.add(ambientLight);
         
-        // Add point lights for galaxy glow
-        const light1 = new THREE.PointLight(0x64ffda, 1, 50);
+        // Multiple bright point lights for galaxy glow
+        const light1 = new THREE.PointLight(0xff6b9d, 2, 100); // Pink
         light1.position.set(0, 0, 0);
         this.scene.add(light1);
         
-        const light2 = new THREE.PointLight(0xff6b9d, 0.8, 40);
-        light2.position.set(15, 10, -10);
+        const light2 = new THREE.PointLight(0x64ffda, 1.5, 80); // Cyan
+        light2.position.set(20, 15, -15);
         this.scene.add(light2);
         
-        const light3 = new THREE.PointLight(0x9b59b6, 0.6, 35);
-        light3.position.set(-15, -10, 10);
+        const light3 = new THREE.PointLight(0x9b59b6, 1.2, 70); // Purple
+        light3.position.set(-20, -15, 15);
         this.scene.add(light3);
+        
+        const light4 = new THREE.PointLight(0xf39c12, 1, 60); // Orange
+        light4.position.set(15, -20, 10);
+        this.scene.add(light4);
     }
 
     createStars() {
-        // Create multiple colorful star systems
-        this.createStarField(3000, 50, 0xffffff); // White distant stars
-        this.createStarField(2000, 40, 0x64ffda); // Cyan galaxy core stars
-        this.createStarField(1500, 35, 0xff6b9d); // Pink accent stars
-        this.createStarField(1200, 30, 0x9b59b6); // Purple stars
-        this.createStarField(1000, 25, 0xf39c12); // Orange stars
-        this.createStarField(800, 20, 0xe74c3c);  // Red stars
-        this.createMovingStars(600, 15); // Animated colorful stars
+        // Optimize for mobile - fewer but more visible stars
+        const isMobile = window.innerWidth <= 768;
+        const starMultiplier = isMobile ? 0.6 : 1;
+        
+        // Create multiple colorful star systems with larger, brighter stars
+        this.createStarField(Math.floor(2000 * starMultiplier), 40, 0xffffff, 3); // White distant stars
+        this.createStarField(Math.floor(1500 * starMultiplier), 35, 0xff6b9d, 4); // Pink galaxy core stars
+        this.createStarField(Math.floor(1200 * starMultiplier), 30, 0x64ffda, 4); // Cyan accent stars
+        this.createStarField(Math.floor(1000 * starMultiplier), 25, 0x9b59b6, 3); // Purple stars
+        this.createStarField(Math.floor(800 * starMultiplier), 20, 0xf39c12, 3);  // Orange stars
+        this.createStarField(Math.floor(600 * starMultiplier), 15, 0xe74c3c, 2);  // Red stars
+        this.createMovingStars(Math.floor(400 * starMultiplier), 12); // Animated colorful stars
+        
+        // Create a bright central galaxy core
+        this.createGalaxyCore();
     }
 
-    createStarField(count, range, color) {
+    createStarField(count, range, color, sizeMultiplier = 1) {
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(count * 3);
         const colors = new Float32Array(count * 3);
@@ -98,8 +128,8 @@ class Galaxy {
             colors[i3 + 1] = colorObj.g + (Math.random() - 0.5) * variation;
             colors[i3 + 2] = colorObj.b + (Math.random() - 0.5) * variation;
 
-            // Size variation
-            sizes[i] = Math.random() * 3 + 1;
+            // Size variation with multiplier for visibility
+            sizes[i] = (Math.random() * 3 + 1) * sizeMultiplier;
         }
 
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -134,9 +164,13 @@ class Galaxy {
                 
                 void main() {
                     float distanceToCenter = distance(gl_PointCoord, vec2(0.5));
-                    float strength = 0.05 / distanceToCenter - 0.1;
+                    float strength = 0.1 / distanceToCenter - 0.05;
                     
-                    gl_FragColor = vec4(vColor, strength);
+                    // Add glow effect
+                    float glow = 1.0 - distanceToCenter * 2.0;
+                    glow = max(0.0, glow);
+                    
+                    gl_FragColor = vec4(vColor, strength + glow * 0.3);
                 }
             `,
             transparent: true,
@@ -148,6 +182,51 @@ class Galaxy {
         const stars = new THREE.Points(geometry, material);
         this.scene.add(stars);
         this.stars.push({ mesh: stars, material: material });
+    }
+
+    createGalaxyCore() {
+        // Create a bright central core
+        const coreGeometry = new THREE.SphereGeometry(2, 32, 32);
+        const coreMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 }
+            },
+            vertexShader: `
+                varying vec3 vPosition;
+                uniform float time;
+                
+                void main() {
+                    vPosition = position;
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vPosition;
+                uniform float time;
+                
+                void main() {
+                    float dist = length(vPosition);
+                    float intensity = 1.0 - dist * 0.3;
+                    
+                    // Animated colors
+                    vec3 color1 = vec3(1.0, 0.4, 0.7); // Pink
+                    vec3 color2 = vec3(0.4, 1.0, 0.8); // Cyan
+                    vec3 color3 = vec3(0.6, 0.3, 1.0); // Purple
+                    
+                    float t = sin(time * 0.5) * 0.5 + 0.5;
+                    vec3 finalColor = mix(mix(color1, color2, t), color3, sin(time * 0.3) * 0.5 + 0.5);
+                    
+                    gl_FragColor = vec4(finalColor, intensity * 0.6);
+                }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending
+        });
+        
+        const core = new THREE.Mesh(coreGeometry, coreMaterial);
+        this.scene.add(core);
+        this.stars.push({ mesh: core, material: coreMaterial, core: true });
     }
 
     createMovingStars(count, range) {
@@ -461,6 +540,17 @@ class Galaxy {
 
 // Initialize galaxy when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    // Check WebGL support
+    function checkWebGLSupport() {
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            return !!gl;
+        } catch (e) {
+            return false;
+        }
+    }
+
     // Hide loading screen after a delay
     setTimeout(() => {
         const loadingScreen = document.getElementById('loading-screen');
@@ -470,6 +560,51 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     }, 2000);
 
-    // Initialize galaxy
-    new Galaxy();
+    // Initialize galaxy or fallback
+    if (checkWebGLSupport()) {
+        try {
+            new Galaxy();
+        } catch (error) {
+            console.warn('Galaxy initialization failed, using fallback:', error);
+            createFallbackBackground();
+        }
+    } else {
+        console.warn('WebGL not supported, using fallback background');
+        createFallbackBackground();
+    }
 });
+
+// Fallback animated background for devices that can't handle Three.js
+function createFallbackBackground() {
+    const canvas = document.getElementById('galaxy-canvas');
+    canvas.style.display = 'none';
+    
+    // Create CSS-based animated background
+    const fallbackBg = document.createElement('div');
+    fallbackBg.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background: 
+            radial-gradient(circle at 20% 30%, rgba(255, 107, 157, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(100, 255, 218, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 40% 80%, rgba(155, 89, 182, 0.3) 0%, transparent 50%),
+            linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #2d1b69 100%);
+        animation: galaxyPulse 8s ease-in-out infinite;
+    `;
+    
+    // Add animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes galaxyPulse {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.insertBefore(fallbackBg, document.body.firstChild);
+}

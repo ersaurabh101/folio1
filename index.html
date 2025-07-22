@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Galaxy Portfolio</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2.1.0">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -246,9 +246,96 @@
         </section>
     </main>
 
-    <!-- Scripts -->
+    <!-- Version and Cache Management -->
+    <script>
+        const PORTFOLIO_VERSION = '2.1.0';
+        const CACHE_KEY = 'portfolio_version';
+        
+        // Check for version updates
+        function checkForUpdates() {
+            const storedVersion = localStorage.getItem(CACHE_KEY);
+            if (storedVersion && storedVersion !== PORTFOLIO_VERSION) {
+                showUpdateNotification();
+            }
+            localStorage.setItem(CACHE_KEY, PORTFOLIO_VERSION);
+        }
+        
+        function showUpdateNotification() {
+            const notification = document.createElement('div');
+            notification.id = 'update-notification';
+            notification.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: linear-gradient(45deg, #64ffda, #ff6b9d);
+                    color: #000;
+                    padding: 15px 20px;
+                    border-radius: 10px;
+                    box-shadow: 0 10px 30px rgba(100, 255, 218, 0.3);
+                    z-index: 10001;
+                    font-weight: 500;
+                    max-width: 300px;
+                    animation: slideIn 0.5s ease-out;
+                ">
+                    <div style="margin-bottom: 10px;">🚀 New version available!</div>
+                    <button onclick="reloadPage()" style="
+                        background: rgba(255,255,255,0.2);
+                        border: 1px solid rgba(255,255,255,0.3);
+                        color: #000;
+                        padding: 8px 16px;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        margin-right: 10px;
+                        font-weight: 500;
+                    ">Reload</button>
+                    <button onclick="dismissUpdate()" style="
+                        background: transparent;
+                        border: 1px solid rgba(0,0,0,0.3);
+                        color: #000;
+                        padding: 8px 16px;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-weight: 500;
+                    ">Later</button>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            
+            // Add animation CSS
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(400px); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        function reloadPage() {
+            // Clear all caches
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            // Force reload with cache bypass
+            window.location.reload(true);
+        }
+        
+        function dismissUpdate() {
+            const notification = document.getElementById('update-notification');
+            if (notification) notification.remove();
+        }
+        
+        // Check for updates when page loads
+        checkForUpdates();
+    </script>
+
+    <!-- Scripts with cache busting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="galaxy.js"></script>
-    <script src="script.js"></script>
+    <script src="galaxy.js?v=2.1.0"></script>
+    <script src="script.js?v=2.1.0"></script>
 </body>
 </html>
